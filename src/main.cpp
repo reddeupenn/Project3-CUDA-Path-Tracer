@@ -2,6 +2,8 @@
 #include "preview.h"
 #include <cstring>
 
+#include "objmesh.h"
+
 static std::string startTimeString;
 
 // For camera controls
@@ -26,6 +28,7 @@ int iteration;
 int width;
 int height;
 
+
 //-------------------------------
 //-------------MAIN--------------
 //-------------------------------
@@ -38,10 +41,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+
     const char *sceneFile = argv[1];
 
     // Load scene file
     scene = new Scene(sceneFile);
+    
+    //ObjMesh* objmesh = new ObjMesh("C:/Users/moi/Desktop/chair/chair.obj", "C:/Users/moi/Desktop/chair/");
+    //scene->loadObj("C:/Users/moi/Desktop/chair/werewolf.obj", "C:/Users/moi/Desktop/chair/");
+    //scene->loadObj("C:/Users/moi/Desktop/chair/broccoli.obj", "C:/Users/moi/Desktop/chair/");
+    scene->loadObj("C:/Users/moi/Desktop/chair/test.obj", "C:/Users/moi/Desktop/chair");
+    //scene->loadObj("C:/Users/moi/Desktop/chair/hazelnut.obj", "C:/Users/moi/Desktop/chair/");
 
     // Set up camera stuff from loaded path tracer settings
     iteration = 0;
@@ -71,6 +81,8 @@ int main(int argc, char** argv) {
 
     // GLFW main loop
     mainLoop();
+
+    //delete objmesh;
 
     return 0;
 }
@@ -181,7 +193,7 @@ void mousePositionCallback(GLFWwindow* window, double xpos, double ypos) {
     camchanged = true;
   }
   else if (rightMousePressed) {
-    zoom += (ypos - lastY) / height;
+    zoom += 10.0f*(ypos - lastY) / height;
     zoom = std::fmax(0.1f, zoom);
     camchanged = true;
   }
@@ -195,8 +207,8 @@ void mousePositionCallback(GLFWwindow* window, double xpos, double ypos) {
     right.y = 0.0f;
     right = glm::normalize(right);
 
-    cam.lookAt -= (float) (xpos - lastX) * right * 0.01f;
-    cam.lookAt += (float) (ypos - lastY) * forward * 0.01f;
+    cam.lookAt -= 5.0f*(float) (xpos - lastX) * right * 0.01f;
+    cam.lookAt += 5.0f*(float) (ypos - lastY) * forward * 0.01f;
     camchanged = true;
   }
   lastX = xpos;

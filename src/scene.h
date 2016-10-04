@@ -7,6 +7,7 @@
 #include "glm/glm.hpp"
 #include "utilities.h"
 #include "sceneStructs.h"
+#include "objmesh.h"
 
 using namespace std;
 
@@ -19,8 +20,21 @@ private:
 public:
     Scene(string filename);
     ~Scene();
+    void loadObj(string filepath, string mtlpath);
 
     std::vector<Geom> geoms;
     std::vector<Material> materials;
     RenderState state;
+    
+    ObjMesh* objmesh;
+    int obj_numshapes;
+    int* obj_numpolyverts;
+    int** obj_polysidx;
+    float* obj_verts;
+    float* obj_norms;
+    float* obj_texts;
+
+    int* obj_polyoffsets;
+    int* obj_polysidxflat;
+    int polyidxcount;
 };

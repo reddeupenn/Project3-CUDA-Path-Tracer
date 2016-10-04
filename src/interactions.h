@@ -2,6 +2,7 @@
 
 #include "intersections.h"
 
+
 // CHECKITOUT
 /**
  * Computes a cosine-weighted random direction in a hemisphere.
@@ -41,6 +42,50 @@ glm::vec3 calculateRandomDirectionInHemisphere(
         + sin(around) * over * perpendicularDirection2;
 }
 
+
+__host__ __device__
+glm::vec3 rotateVector(glm::vec3 n1, glm::vec3 axis, float angle)
+{
+    axis = glm::normalize(axis);
+    float u = axis[0];
+    float v = axis[1];
+    float w = axis[2];
+
+    float x = n1[0];
+    float y = n1[1];
+    float z = n1[2];
+
+    float cosalpha = cos(angle);
+    float sinalpha = sin(angle);
+
+    glm::vec3 vec(
+        (-u * (-u*x - v*y - w*z)) * (1 - cosalpha) + x * cosalpha + (-w*y + v*z) * sinalpha,
+        (-v * (-u*x - v*y - w*z)) * (1 - cosalpha) + y * cosalpha + (w*x - u*z) * sinalpha,
+        (-w * (-u*x - v*y - w*z)) * (1 - cosalpha) + z * cosalpha + (-v*x + u*y) * sinalpha);
+
+    return vec;
+}
+
+__host__ __device__
+glm::vec3 randSphericalVec(float spread, thrust::default_random_engine &rng)
+{
+    thrust::uniform_real_distribution<float> u01(0, 1);
+
+    //srand(SEED++);
+    double theta = 2 * PI * u01(rng);
+    //srand(SEED++);
+    double phi = acos((spread * PI * u01(rng) - 1.0));
+
+    glm::vec3 V(cos(theta)*sin(phi),
+                sin(theta)*sin(phi),
+                cos(phi));
+    V = glm::normalize(V);
+
+    return V;
+}
+
+
+
 /**
  * Scatter a ray with some probabilities according to the material properties.
  * For example, a diffuse surface scatters in a cosine-weighted hemisphere.
@@ -77,4 +122,59 @@ void scatterRay(
     // TODO: implement this.
     // A basic implementation of pure-diffuse shading will just call the
     // calculateRandomDirectionInHemisphere defined above.
+
+
+    if (m.hasReflective != 0.0f && m.hasRefractive != 0.0f)
+    {
+        thrust::uniform_real_distribution<float> u01(0, 1);
+        float randval = sqrt(u01(rng));
+
+        if (randval > 0.5)
+        {
+            ray.direction = glm::reflect(ray.direction, normal);
+            ray.isrefl = true;
+        }
+        else
+        {
+            ray.direction = glm::refract(ray.direction, normal, m.indexOfRefraction);
+            ray.isrefr = true;
+        }
+        ray.origin = intersect;
+
+        ray.origin = intersect + normal*0.00001f;
+    }
+    else if (m.hasReflective != 0.0f)
+    {
+        ray.direction = glm::reflect(ray.direction, normal);
+        ray.origin = intersect;
+        ray.isrefl = true;
+    }
+    else if (m.hasRefractive != 0.0f)
+    {
+        ray.direction = glm::refract(ray.direction, normal, m.indexOfRefraction);
+        ray.origin = intersect+normal*0.00001f;
+        ray.isrefr = true;
+    }
+    else if (m.specular.exponent != 0.0f)
+    {
+        glm::vec3 v = randSphericalVec(0.5, rng);
+        float angle = acos(glm::dot(glm::vec3(0.0f, 0.0f, 1.0f), normal));
+        glm::vec3 axis(0.0f, 0.0f, 1.0f);
+        axis = glm::normalize(glm::cross(axis, normal));
+        ray.direction = rotateVector(v, axis, angle);
+        
+        //ray.direction = randSphericalVec(0.1, normal, rng); //glm::refract(ray.direction, normal, m.indexOfRefraction);
+        ray.origin = intersect + normal*0.00001f;
+        ray.isrefr = true;
+        
+    }
+    else
+    {
+        // use uniform spherical distribution
+        ray.direction = calculateRandomDirectionInHemisphere(normal, rng);
+        //ray.direction = randSphericalVec(0.5, normal, rng);
+        ray.origin = intersect+normal*0.00001f;
+        ray.isrefl = false;
+        ray.isrefr = false;
+    }
 }
