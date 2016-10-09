@@ -77,7 +77,7 @@ This is a path tracer running on the GPU using CUDA.
 
 
 * Soft reflections
-    WHen using a uniform distribution function, one can achieve soft reflections and refractions
+    When using a uniform distribution function, one can achieve soft reflections and refractions
     Here's a reflection and refraction test
     Once we check for surface penetration and apply our fresnel function we get this:
     * ![reflectionsbad](./img/softreflections1.png)
@@ -141,6 +141,7 @@ This is a path tracer running on the GPU using CUDA.
     Here are a few results.
   * ![fov1](./img/dofon.png)
   * ![fov1](./img/dofoff.png)
+  * ![fov](./img/fov.gif)
 
 
 * Subsurface scattering
@@ -151,7 +152,7 @@ This is a path tracer running on the GPU using CUDA.
     When the depth calculation doesn't take into account a zero influence outside the surface, we get
     artifacts and in some cases this can be seen as banding.
     Here's what the low poly stanford bunny looks like with and without sss.
-    * ![sss](./img/dofoff.png)
+    * ![sss](./img/sss.gif)
 
 
 * Performance
