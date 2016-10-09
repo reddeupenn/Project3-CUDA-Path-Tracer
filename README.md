@@ -72,14 +72,8 @@ This is a path tracer running on the GPU using CUDA.
     And after fixing with proper separation, the final result can be seen:
     * ![reflectionsbad](./img/cornell.2016-10-08_00-48-51z.5000samp.png)
 
-
-    Once we check for surface penetration and apply our fresnel function we get this:
-    * ![reflectionsbad](./img/softreflections1.png)
-    And finally when we enable soft reflections, we get this:
-    * ![reflectionsbad](./img/softreflections2.png)
-
     Here are a few tests with different reflection / refraction coeficients
-    * ![reflectionsbad](./img/softreflections2.png)
+    * ![reflectionsbad](./img/reflectionsrefractions.png)
 
 
 * Soft reflections
