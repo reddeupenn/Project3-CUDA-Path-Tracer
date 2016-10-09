@@ -16,7 +16,7 @@ static bool camchanged = true;
 static float dtheta = 0, dphi = 0;
 static glm::vec3 cammove;
 
-static bool rayCaching = true;
+static bool rayCaching = false;
 static bool antialias = true;
 static float softness = 0.0f;
 static bool SSS = true;
