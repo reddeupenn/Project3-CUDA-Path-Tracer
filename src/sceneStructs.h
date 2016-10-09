@@ -15,8 +15,8 @@ enum GeomType {
 struct Ray {
     glm::vec3 origin;
     glm::vec3 direction;
-    bool isrefl;
-    bool isrefr;
+    bool isinside;
+    float sdepth;
 };
 
 struct Geom {
@@ -40,6 +40,7 @@ struct Material {
     float hasRefractive;
     float indexOfRefraction;
     float emittance;
+    glm::vec3 transmittance;
 };
 
 struct Camera {
@@ -66,6 +67,7 @@ struct PathSegment {
     glm::vec3 color;
 	int pixelIndex;
 	int remainingBounces;
+    int materialIdHit;
 };
 
 enum MaterialShadingTechnique {

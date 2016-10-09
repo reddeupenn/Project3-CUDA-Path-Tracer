@@ -11,9 +11,20 @@ Scene::Scene(string filename) {
     obj_verts = NULL;
     obj_norms = NULL;
     obj_texts = NULL;
+    obj_bboxes = NULL;
     obj_polyoffsets = NULL;
     obj_polysidxflat = NULL;
     objmesh = NULL;
+    // shading
+    obj_RGB = NULL;
+    obj_SPECEX = NULL;
+    obj_SPECRGB = NULL;
+    obj_REFL = NULL;
+    obj_REFR = NULL;
+    obj_REFRIOR = NULL;
+    obj_materialOffsets = NULL;
+    hasObj = false;
+
     polyidxcount = 0;
 
     cout << "Reading scene from " << filename << " ..." << endl;
@@ -58,11 +69,29 @@ Scene::~Scene()
         delete[] obj_norms;
     if (obj_texts != NULL)
         delete[] obj_texts;
+    if (obj_bboxes != NULL)
+        delete[] obj_bboxes;
     if (obj_numpolyverts != NULL)
         delete[] obj_numpolyverts;
     if (objmesh != NULL)
         delete objmesh;
-    
+
+    // shading
+    if (obj_RGB != NULL)
+        delete[] obj_RGB;
+    if (obj_SPECEX != NULL)
+        delete[] obj_SPECEX;
+    if (obj_SPECRGB != NULL)
+        delete[] obj_SPECRGB;
+    if (obj_REFL != NULL)
+        delete[] obj_REFL;
+    if (obj_REFR != NULL)
+        delete[] obj_REFR;
+    if (obj_REFRIOR != NULL)
+        delete[] obj_REFRIOR;
+    if (obj_materialOffsets != NULL)
+        delete[] obj_materialOffsets;
+
     if(obj_polyoffsets != NULL)
         delete[] obj_polyoffsets;
     if(obj_polysidxflat != NULL)
@@ -238,6 +267,14 @@ void Scene::loadObj(string filepath, string mtlpath)
         delete[] obj_verts;
         delete[] obj_norms;
         delete[] obj_texts;
+        delete[] obj_bboxes;
+        delete[] obj_RGB;
+        delete[] obj_SPECEX;
+        delete[] obj_SPECRGB;
+        delete[] obj_REFL;
+        delete[] obj_REFR;
+        delete[] obj_REFRIOR;
+        delete[] obj_materialOffsets;
         delete objmesh;
     }
 
@@ -249,14 +286,24 @@ void Scene::loadObj(string filepath, string mtlpath)
     obj_verts = new float[objmesh->attrib.vertices.size()];
     obj_norms = new float[objmesh->attrib.normals.size()];
     obj_texts = new float[objmesh->attrib.texcoords.size()];
-
+    obj_bboxes = new float[obj_numshapes*6];
+    // shading
+    obj_RGB = new float[obj_numshapes * 3];
+    obj_SPECEX = new float[obj_numshapes];
+    obj_SPECRGB = new float[obj_numshapes * 3];
+    obj_REFL = new float[obj_numshapes];
+    obj_REFR = new float[obj_numshapes];
+    obj_REFRIOR = new float[obj_numshapes];
+    obj_materialOffsets = new int[obj_numshapes];
 
 
     // vertices
     // get the vertex indices
 
-    for (int i = 0; i < objmesh->attrib.vertices.size(); i++){
+    for (int i = 0; i < objmesh->attrib.vertices.size(); i += 3){
         obj_verts[i] = objmesh->attrib.vertices[i];
+        obj_verts[i + 1] = objmesh->attrib.vertices[i + 1];
+        obj_verts[i + 2] = objmesh->attrib.vertices[i + 2];
     }
 
     for (int i = 0; i < objmesh->attrib.normals.size(); i++) {
@@ -301,7 +348,160 @@ void Scene::loadObj(string filepath, string mtlpath)
         }
     }
 
-    
+
+    // bboxes
+    int iterator = 0;
+    for (int i = 0; i < obj_numshapes; i++)
+    {
+        float minx = FLT_MAX;
+        float maxx = 0.0f;
+        float miny = FLT_MAX;
+        float maxy = 0.0f;
+        float minz = FLT_MAX;
+        float maxz = 0.0f;
+        for (int j = iterator; j < iterator + obj_polyoffsets[i]; j += 3)
+        {
+            int idx1 = obj_polysidxflat[j];
+            int idx2 = obj_polysidxflat[j + 1];
+            int idx3 = obj_polysidxflat[j + 2];
+            int idxo1 = 3 * idx1;
+            int idxo2 = 3 * idx2;
+            int idxo3 = 3 * idx3;
+
+            if (obj_verts[idxo1] < minx)
+                minx = obj_verts[idxo1];
+            if (obj_verts[idxo1] > maxx)
+                maxx = obj_verts[idxo1];
+            if (obj_verts[idxo1 + 1] < miny)
+                miny = obj_verts[idxo1 + 1];
+            if (obj_verts[idxo1 + 1] > maxy)
+                maxy = obj_verts[idxo1 + 1];
+            if (obj_verts[idxo1 + 2] < minz)
+                minz = obj_verts[idxo1 + 2];
+            if (obj_verts[idxo1 + 2] > maxz)
+                maxz = obj_verts[idxo1 + 2];
+        }
+        obj_bboxes[iterator] = minx;
+        obj_bboxes[iterator+1] = miny;
+        obj_bboxes[iterator+2] = minz;
+        obj_bboxes[iterator+3] = maxx;
+        obj_bboxes[iterator+4] = maxy;
+        obj_bboxes[iterator+5] = maxz;
+
+        iterator += obj_polyoffsets[i];
+    }
+
+
+    // shaders
+    for (int i = 0; i < obj_numshapes; i++)
+    {
+        if (objmesh->materials.size() > i)
+        {
+            int illum = objmesh->materials[i].illum;
+
+            if (illum <= 2)
+            {
+                obj_RGB[3 * i] = objmesh->materials[i].ambient[0] > objmesh->materials[i].diffuse[0] ? objmesh->materials[i].ambient[0] : objmesh->materials[i].diffuse[0];
+                obj_RGB[3 * i + 1] = objmesh->materials[i].ambient[1] > objmesh->materials[i].diffuse[1] ? objmesh->materials[i].ambient[1] : objmesh->materials[i].diffuse[1];
+                obj_RGB[3 * i + 2] = objmesh->materials[i].ambient[2] > objmesh->materials[i].diffuse[2] ? objmesh->materials[i].ambient[2] : objmesh->materials[i].diffuse[2];
+                obj_SPECEX[i] = 0.0f;
+                obj_SPECRGB[3 * i] = 0.0f;
+                obj_SPECRGB[3 * i + 1] = 0.0f;
+                obj_SPECRGB[3 * i + 2] = 0.0f;
+                obj_REFL[i] = 0.0f;
+                obj_REFR[i] = 0.0f;
+                obj_REFRIOR[i] = 0.0f;
+            }
+            else if (illum == 3)
+            {
+                obj_RGB[3 * i] = objmesh->materials[i].ambient[0] > objmesh->materials[i].diffuse[0] ? objmesh->materials[i].ambient[0] : objmesh->materials[i].diffuse[0];
+                obj_RGB[3 * i + 1] = objmesh->materials[i].ambient[1] > objmesh->materials[i].diffuse[1] ? objmesh->materials[i].ambient[1] : objmesh->materials[i].diffuse[1];
+                obj_RGB[3 * i + 2] = objmesh->materials[i].ambient[2]> objmesh->materials[i].diffuse[2] ? objmesh->materials[i].ambient[2] : objmesh->materials[i].diffuse[2];
+                obj_SPECEX[i] = 1.0f;
+                obj_SPECRGB[3 * i] = objmesh->materials[i].specular[0];
+                obj_SPECRGB[3 * i + 1] = objmesh->materials[i].specular[1];
+                obj_SPECRGB[3 * i + 2] = objmesh->materials[i].specular[2];
+                obj_REFL[i] = 1.0f;
+                obj_REFR[i] = 0.0f;
+                obj_REFRIOR[i] = 0.0f;
+            }
+            else
+            {
+                obj_RGB[3 * i] = objmesh->materials[i].ambient[0] > objmesh->materials[i].diffuse[0] ? objmesh->materials[i].ambient[0] : objmesh->materials[i].diffuse[0];
+                obj_RGB[3 * i + 1] = objmesh->materials[i].ambient[1] > objmesh->materials[i].diffuse[1] ? objmesh->materials[i].ambient[1] : objmesh->materials[i].diffuse[1];
+                obj_RGB[3 * i + 2] = objmesh->materials[i].ambient[2] > objmesh->materials[i].diffuse[2] ? objmesh->materials[i].ambient[2] : objmesh->materials[i].diffuse[2];
+                obj_SPECEX[i] = 1.0f;
+                obj_SPECRGB[3 * i] = objmesh->materials[i].specular[0];
+                obj_SPECRGB[3 * i + 1] = objmesh->materials[i].specular[1];
+                obj_SPECRGB[3 * i + 2] = objmesh->materials[i].specular[2];
+                obj_REFL[i] = 1.0f;
+                obj_REFR[i] = 1.0f;
+                obj_REFRIOR[i] = objmesh->materials[i].ior;
+            }
+            //printf("\nmaterial RGB = %f \n", objmesh->materials[i].ambient[0]);
+            //printf("\nmaterial REFRIOR = %f \n", objmesh->materials[i].ior);
+            //printf("\nmaterial SPEC = %f %f %f\n", objmesh->materials[i].specular[0], objmesh->materials[i].specular[1], objmesh->materials[i].specular[2]);
+        }
+        else
+        {
+            // default shading
+            obj_RGB[3 * i] = 1.0f;
+            obj_RGB[3 * i + 1] = 1.0f;
+            obj_RGB[3 * i + 2] = 1.0f;
+            obj_SPECEX[i] = 0.0f;
+            obj_SPECRGB[3 * i] = 0.0f;
+            obj_SPECRGB[3 * i + 1] = 0.0f;
+            obj_SPECRGB[3 * i + 2] = 0.0f;
+            obj_REFL[i] = 0.0f;
+            obj_REFR[i] = 0.0f;
+            obj_REFRIOR[i] = 0.0f;
+        }
+
+        Material objMaterial;
+        objMaterial.color = glm::vec3(obj_RGB[3 * i], obj_RGB[3 * i + 1], obj_RGB[3 * i + 2]);
+        objMaterial.specular.exponent = obj_SPECEX[i];
+        objMaterial.specular.color = glm::vec3(obj_SPECRGB[3 * i], obj_SPECRGB[3 * i + 1], obj_SPECRGB[3 * i + 2]);
+        objMaterial.hasReflective = obj_REFL[i];
+        objMaterial.hasRefractive = obj_REFR[i];
+        objMaterial.indexOfRefraction = obj_REFRIOR[i];
+        objMaterial.emittance = 0.0f;
+        objMaterial.transmittance = glm::vec3(objmesh->materials[i].transmittance[0], objmesh->materials[i].transmittance[1], objmesh->materials[i].transmittance[2]);
+
+        /*
+        objMaterial.color = glm::vec3((float)obj_RGB[3 * i], (float)obj_RGB[3 * i + 1], (float)obj_RGB[3 * i + 2]);
+        objMaterial.color = glm::vec3(1.0f, 1.0f, 1.0f);
+        objMaterial.specular.exponent = 0.0f;
+        objMaterial.specular.color = glm::vec3(0.0f, 0.0f, 0.0f);
+        objMaterial.hasReflective = 0.0f;
+        objMaterial.hasRefractive = 0.0f;
+        objMaterial.indexOfRefraction = 0.0f;
+        */
+
+        
+        //printf("\ndiffuse = %f %f %f", obj_RGB[3 * i], obj_RGB[3 * i + 1], obj_RGB[3 * i + 2]);
+        //printf("\ntransmittance = %f %f %f", objMaterial.transmittance.x, objMaterial.transmittance.y, objMaterial.transmittance.z);
+        
+        
+        /*
+        printf("\ndiffuse = %f %f %f", objmesh->materials[i].diffuse[0], objmesh->materials[i].diffuse[1], objmesh->materials[i].diffuse[2]);
+        objMaterial.color.x = objmesh->materials[i].diffuse[0];// > objmesh->materials[i].diffuse[0] ? objmesh->materials[i].ambient[0] : objmesh->materials[i].diffuse[0];
+        objMaterial.color.y = objmesh->materials[i].diffuse[1];// > objmesh->materials[i].diffuse[1] ? objmesh->materials[i].ambient[1] : objmesh->materials[i].diffuse[1];
+        objMaterial.color.z = objmesh->materials[i].diffuse[2];// > objmesh->materials[i].diffuse[2] ? objmesh->materials[i].ambient[2] : objmesh->materials[i].diffuse[2];
+        objMaterial.specular.exponent = 0.0f;
+        objMaterial.specular.color.x = 0.f;
+        objMaterial.specular.color.y = 0.0f;
+        objMaterial.specular.color.z = 0.0f;
+        objMaterial.hasReflective = 0.0f;
+        objMaterial.hasRefractive = 0.0f;
+        objMaterial.indexOfRefraction = objmesh->materials[i].ior;
+        */
+
+        obj_materialOffsets[i] = materials.size();
+        materials.push_back(objMaterial);
+        
+    }
+
+    /*
     // sanity check print
     int iterator = 0;
     for (int i = 0; i < obj_numshapes; i++)
@@ -331,6 +531,9 @@ void Scene::loadObj(string filepath, string mtlpath)
         }
 
         iterator += obj_polyoffsets[i];
-    }   
+    }
+    */
+
+    hasObj = true;
     
 }

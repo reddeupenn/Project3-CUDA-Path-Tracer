@@ -1,0 +1,23 @@
+﻿Build started 10/9/2016 2:46:08 PM.
+     1>Project "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\cis565_path_tracer.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\Release\cis565_path_tracer.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/external/lib/win" /LIBPATH:"C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/external/lib/win/Release" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64\cudart_static.lib" src\Release\src.lib ..\external\lib\win\glfw3.lib glu32.lib opengl32.lib ..\external\lib\win\glew32s.lib "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64\cudart_static.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:"C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/build/Release/cis565_path_tracer.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/build/Release/cis565_path_tracer.lib" /MACHINE:X64  /machine:x64 cis565_path_tracer.dir\Release\main.obj
+            Creating library C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/build/Release/cis565_path_tracer.lib and object C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/build/Release/cis565_path_tracer.exp
+     1>LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+         cis565_path_tracer.vcxproj -> C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\Release\cis565_path_tracer.exe
+       PostBuildEvent:
+         setlocal
+         "C:\Program Files\CMake\bin\cmake.exe" -E copy_directory C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/shaders C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/build/shaders
+         if %errorlevel% neq 0 goto :cmEnd
+         :cmEnd
+         endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+         :cmErrorLevel
+         exit /b %1
+         :cmDone
+         if %errorlevel% neq 0 goto :VCEnd
+         :VCEnd
+     1>Done Building Project "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\cis565_path_tracer.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.25

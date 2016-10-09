@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "objmesh.h"
-
 static std::string startTimeString;
 
 // For camera controls
@@ -17,10 +16,15 @@ static bool camchanged = true;
 static float dtheta = 0, dphi = 0;
 static glm::vec3 cammove;
 
+static bool rayCaching = true;
+static bool antialias = true;
+static float softness = 0.0f;
+static bool SSS = true;
+
 float zoom, theta, phi;
 glm::vec3 cameraPosition;
 glm::vec3 ogLookAt; // for recentering the camera
-
+glm::vec3 camoffset;
 Scene *scene;
 RenderState *renderState;
 int iteration;
@@ -28,6 +32,30 @@ int iteration;
 int width;
 int height;
 
+static float dofAngle = 0.03f;
+static float dofDistance = 6.0f;
+
+static bool TESTINGMODE = false;
+static bool COMPACTION = true;
+
+
+/*
+struct saxpy_functor2 { 
+    const float a; 
+    saxpy_functor2(float _a) : a(_a) {} 
+    __host__ __device__ 
+        float operator()(const float& x, const float& y) const 
+    { 
+        return a * x + y; 
+    } 
+}; 
+void saxpy_fast2(float A, thrust::device_vector<float>& X, thrust::device_vector<float>& Y) 
+{ 
+    // Y <- A * X + Y 
+    thrust::transform(X.begin(), X.end(), Y.begin(), Y.begin(), saxpy_functor2(A)); 
+}
+
+*/
 
 //-------------------------------
 //-------------MAIN--------------
@@ -37,22 +65,44 @@ int main(int argc, char** argv) {
     startTimeString = currentTimeString();
 
     if (argc < 2) {
-        printf("Usage: %s SCENEFILE.txt\n", argv[0]);
+        printf("Usage: %s SCENEFILE.txt\n       %s SCENEFILE.txt SCENEFILE.obj\n", argv[0], argv[0]);
         return 1;
     }
 
+    char *sceneFile;
+    std::string objPath;
 
-    const char *sceneFile = argv[1];
+    if (argc == 2) 
+    {
+        sceneFile = argv[1];
+        // Load scene file
+        scene = new Scene(sceneFile);
+    }
+    if (argc = 3)
+    {
+        sceneFile = argv[1];
+        // Load scene file
+        scene = new Scene(sceneFile);
+        objPath = argv[2];
+        scene->loadObj(objPath, objPath.substr(0, objPath.find_last_of("/\\") + 1));
+    }
+    else{
+        printf("Usage: %s SCENEFILE.txt\n       %s SCENEFILE.txt SCENEFILE.obj\n", argv[0], argv[0]);
+        return 1;
+    }
+    
 
     // Load scene file
-    scene = new Scene(sceneFile);
+    //scene = new Scene(sceneFile);
     
     //ObjMesh* objmesh = new ObjMesh("C:/Users/moi/Desktop/chair/chair.obj", "C:/Users/moi/Desktop/chair/");
-    //scene->loadObj("C:/Users/moi/Desktop/chair/werewolf.obj", "C:/Users/moi/Desktop/chair/");
-    //scene->loadObj("C:/Users/moi/Desktop/chair/broccoli.obj", "C:/Users/moi/Desktop/chair/");
-    scene->loadObj("C:/Users/moi/Desktop/chair/test.obj", "C:/Users/moi/Desktop/chair");
-    //scene->loadObj("C:/Users/moi/Desktop/chair/hazelnut.obj", "C:/Users/moi/Desktop/chair/");
+    //objPath = "C:/Users/moi/Desktop/chair/werewolf.obj";
+    //std::string objPath = "C:/Users/moi/Desktop/chair/broccoli.obj";
+    //std::string objPath = "C:/Users/moi/Desktop/chair/test.obj";
+    //std::string objPath = "C:/Users/moi/Desktop/chair/hazelnut.obj";
+    //scene->loadObj(objPath, objPath.substr(0, objPath.find_last_of("/\\")+1));
 
+    
     // Set up camera stuff from loaded path tracer settings
     iteration = 0;
     renderState = &scene->state;
@@ -75,6 +125,7 @@ int main(int argc, char** argv) {
     theta = glm::acos(glm::dot(glm::normalize(viewZY), glm::vec3(0, 1, 0)));
     ogLookAt = cam.lookAt;
     zoom = glm::length(cam.position - ogLookAt);
+
 
     // Initialize CUDA and GL components
     init();
@@ -114,9 +165,9 @@ void runCuda() {
     if (camchanged) {
         iteration = 0;
         Camera &cam = renderState->camera;
-        cameraPosition.x = zoom * sin(phi) * sin(theta);
-        cameraPosition.y = zoom * cos(theta);
-        cameraPosition.z = zoom * cos(phi) * sin(theta);
+        cameraPosition.x = zoom * sin(phi) * sin(theta)+camoffset.x;
+        cameraPosition.y = zoom * cos(theta) + camoffset.y;
+        cameraPosition.z = zoom * cos(phi) * sin(theta) + camoffset.z;
 
         cam.view = -glm::normalize(cameraPosition);
         glm::vec3 v = cam.view;
@@ -126,7 +177,7 @@ void runCuda() {
         cam.right = r;
 
         cam.position = cameraPosition;
-        cameraPosition += cam.lookAt;
+        cameraPosition += cam.lookAt + camoffset;
         cam.position = cameraPosition;
         camchanged = false;
       }
@@ -135,7 +186,7 @@ void runCuda() {
     // No data is moved (Win & Linux). When mapped to CUDA, OpenGL should not use this buffer
 
     if (iteration == 0) {
-        pathtraceFree();
+        pathtraceFree(scene);
         pathtraceInit(scene);
     }
 
@@ -146,35 +197,126 @@ void runCuda() {
 
         // execute the kernel
         int frame = 0;
-        pathtrace(pbo_dptr, frame, iteration);
+        pathtrace(pbo_dptr, 
+                  frame, 
+                  iteration, 
+                  dofDistance, 
+                  dofAngle, 
+                  rayCaching, 
+                  antialias, 
+                  softness,
+                  SSS,
+                  TESTINGMODE,
+                  COMPACTION);
 
         // unmap buffer object
         cudaGLUnmapBufferObject(pbo);
     } else {
         saveImage();
-        pathtraceFree();
+        pathtraceFree(scene);
         cudaDeviceReset();
         exit(EXIT_SUCCESS);
     }
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
-      switch (key) {
-      case GLFW_KEY_ESCAPE:
-        saveImage();
-        glfwSetWindowShouldClose(window, GL_TRUE);
-        break;
-      case GLFW_KEY_S:
-        saveImage();
-        break;
-      case GLFW_KEY_SPACE:
-        camchanged = true;
-        renderState = &scene->state;
-        Camera &cam = renderState->camera;
-        cam.lookAt = ogLookAt;
-        break;
-      }
+    if (action == GLFW_REPEAT || action == GLFW_PRESS) {
+        if (key == GLFW_KEY_ESCAPE){
+            saveImage();
+            glfwSetWindowShouldClose(window, GL_TRUE);
+        } else if (key == GLFW_KEY_S){
+            saveImage();
+        } else if (key == GLFW_KEY_SPACE){
+            camchanged = true;
+            renderState = &scene->state;
+            Camera &cam = renderState->camera;
+            cam.lookAt = ogLookAt;
+            camoffset.x = 0.0f;
+            camoffset.y = 0.0f;
+            camoffset.z = 0.0f;
+        } else if (key == GLFW_KEY_UP){
+          camoffset.y += 1.0f;
+          camchanged = true;
+        } else if (key == GLFW_KEY_DOWN){
+            camoffset.y -= 1.0f;
+            camchanged = true;
+        } else if (key == GLFW_KEY_LEFT){
+            camoffset.x -= 1.0f;
+            camchanged = true;
+        } else if (key == GLFW_KEY_RIGHT){
+            camoffset.x += 1.0f;
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_EQUAL){
+            dofAngle += 0.0004f;
+            if (dofAngle > 0.03f)
+                dofAngle == 0.03f;
+            printf("\ndof blur = %f", dofAngle);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_MINUS){
+            dofAngle -= 0.0004f;
+            if (dofAngle < 0.0f)
+                dofAngle == 0.0f;
+            printf("\ndof blur = %f", dofAngle);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_LEFT_BRACKET){
+            dofDistance -= 0.1f;
+            if (dofDistance < 0.0f)
+                dofDistance == 0.0f;
+            printf("\nfocal point = %f", dofDistance);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_RIGHT_BRACKET){
+            dofDistance += 0.1f;
+            printf("\nfocal point = %f", dofDistance);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_0){
+            dofDistance = 0.0f;
+            dofAngle = 0.0f;
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_C){
+            rayCaching = !rayCaching;
+            printf("\ncaching = %d", rayCaching);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_A){
+            antialias = !antialias;
+            printf("\nantialias = %d", antialias);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_2){
+            softness += 0.0000001f;
+            if (softness > 1.0f)
+                softness = 1.0f;
+            printf("\nsoftness = %f", softness);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_1){
+            softness -= 0.0000001f;
+            if (softness < 0.0f)
+                softness = 0.0f;
+            printf("\nsoftness = %f", softness);
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_X){
+            SSS = !SSS;
+            printf("\nsubsurface scattering = %s", SSS == 0 ? "disabled" : "enabled");
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_F){
+            COMPACTION = !COMPACTION;
+            printf("\stream compaction = %s", COMPACTION == 0 ? "disabled" : "enabled");
+            camchanged = true;
+        }
+        else if (key == GLFW_KEY_T){
+            TESTINGMODE = !TESTINGMODE;
+            printf("\nTESTING = %s", TESTINGMODE == 0 ? "disabled" : "enabled");
+            camchanged = true;
+        }
     }
 }
 
@@ -208,7 +350,7 @@ void mousePositionCallback(GLFWwindow* window, double xpos, double ypos) {
     right = glm::normalize(right);
 
     cam.lookAt -= 5.0f*(float) (xpos - lastX) * right * 0.01f;
-    cam.lookAt += 5.0f*(float) (ypos - lastY) * forward * 0.01f;
+    cam.lookAt += 5.0f*(float)(ypos - lastY) * forward * 0.01f;
     camchanged = true;
   }
   lastX = xpos;

@@ -33,6 +33,16 @@ public:
     float* obj_verts;
     float* obj_norms;
     float* obj_texts;
+    float* obj_bboxes;
+    // shading
+    float* obj_RGB;
+    float* obj_SPECEX;
+    float* obj_SPECRGB;
+    float* obj_REFL;
+    float* obj_REFR;
+    float* obj_REFRIOR;
+    int* obj_materialOffsets;
+    bool hasObj;
 
     int* obj_polyoffsets;
     int* obj_polysidxflat;
