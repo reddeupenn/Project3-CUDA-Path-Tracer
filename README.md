@@ -130,7 +130,7 @@ This is a path tracer running on the GPU using CUDA.
 
 
 * Depth of field
-  * By shifting the camera around the its focal length, we can produce a blur that increases with
+  * By rotating the camera around its focal length, we can produce a blur that increases with
     the distance from the focal point.  This in effect generated a depth of field similar to a camera
     focusing with a large aperture.
     Rotating the camera around it's focal point is not always straight forward because of the axis alignment
@@ -175,7 +175,7 @@ This is a path tracer running on the GPU using CUDA.
     * ![allgraphs](./img/all.png)
 
   * In order to get a better view of the result, we seperate the calls.  
-    Here's what the calls to the pathTraceOneBounce function:
+    Here are the calls to the pathTraceOneBounce function:
     * ![onebounce](./img/onebounce.gif)
     And the calls to generateRaysFromCamera:
     * ![genray](./img/genray.gif)
@@ -183,20 +183,20 @@ This is a path tracer running on the GPU using CUDA.
     can't easily compare the results.
     In order to get a better comparison we generate a chart for all the tests by their category.
     We do this by averaging the results.  We now have the following charts:
-    * ![chartall](./img/chart_all.gif)
+    * ![chartall](./img/chart_all.png)
     The shadeMaterial function is too fast to be shown so we plot it separately:
-    * ![chartshadematerial](./img/chart_shadingonly.gif)
+    * ![chartshadematerial](./img/chart_shadingonly.png)
 
     Now we can clearly see what's happening. (lower is better)
     * genRayfromCam shows a pretty good improvement with ray caching.  This is expected
-      since the rays that are being cached are reused instead being regenerated.  Changing
+      since the rays that are being cached are reused instead of being regenerated.  Changing
       block sizes didn't seem to make a big impact though.
 
     * pathTraceOneBounce shows quite a big drop in performance when disabling stream compaction.
       with double the time taken when stream compaction is disabled in a default scene. This
       obviously would be a much bigger impact if the scene was mostly background color.
       Again this is expected sine we recompute rays that would have been removed.  What was not
-      expected was whit a block size of 16.  The performance hit of 1.8 times is considerable since 
+      expected was wiht a block size of 16.  The performance hit of 1.8 times is considerable since 
       caching is enabled for all the block size benchmarks.  The hit is so considerable that it is 
       actually worse than not having stream compaction with an different block size.  
       This is possibly due to the use of a full warp for only 16 blocks underutilizing the processor 
@@ -229,5 +229,5 @@ This is a path tracer running on the GPU using CUDA.
   * lack of precision
   ![blooper5](./img/cornell.2016-10-01_18-23-24z.493samp.png)
 
-Thanks!
+  * Thanks!
    ![chartshadematerial](./img/cornell.2016-10-07_21-42-52z.5000samp.png)
