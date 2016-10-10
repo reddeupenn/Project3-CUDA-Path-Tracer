@@ -1,6 +1,9 @@
-﻿Build started 10/9/2016 7:15:25 PM.
-     1>Project "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\cis565_path_tracer.vcxproj" on node 2 (Build target(s)).
-     1>ClCompile:
+﻿Build started 10/9/2016 7:37:07 PM.
+     1>Project "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\cis565_path_tracer.vcxproj" on node 2 (Rebuild target(s)).
+     1>CustomBuild:
+         Building Custom Rule C:/Users/moi/git/CIS565/Project3-CUDA-Path-Tracer/CMakeLists.txt
+         CMake does not need to re-run because C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\CMakeFiles\generate.stamp is up-to-date.
+       ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /I"C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\external" /I"C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\external\include" /I"C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\." /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" /nologo /W3 /WX- /O2 /Ob2 /D WIN32 /D _WINDOWS /D NDEBUG /D GLEW_STATIC /D "CMAKE_INTDIR=\"Release\"" /D _MBCS /Gm- /EHsc /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /GR /Fo"cis565_path_tracer.dir\Release\\" /Fd"cis565_path_tracer.dir\Release\vc120.pdb" /Gd /TP /errorReport:prompt "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\src\main.cpp"
          main.cpp
      1>C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\src\main.cpp(142): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
@@ -28,8 +31,8 @@
          :cmDone
          if %errorlevel% neq 0 goto :VCEnd
          :VCEnd
-     1>Done Building Project "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\cis565_path_tracer.vcxproj" (Build target(s)).
+     1>Done Building Project "C:\Users\moi\git\CIS565\Project3-CUDA-Path-Tracer\build\cis565_path_tracer.vcxproj" (Rebuild target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:00.97
+Time Elapsed 00:00:00.78
