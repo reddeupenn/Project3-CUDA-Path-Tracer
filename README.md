@@ -20,7 +20,7 @@ This is a path tracer running on the GPU using CUDA.
   * = for increasing depth of field.
   * [ for decreasing focal length.
   * ] for increasing focal length.
-  * C for enabling / disabling caching and sorting.
+  * C for enabling / disabling caching and sorting (disbled by default).
   * X for enabling / disabling subsurface scattering (only materials with sss).
   * F for enabling / disabling stream compaction and ray sorting by material.
   * T for enabling / disabling benchmark tests.
